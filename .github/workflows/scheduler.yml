@@ -1,0 +1,29 @@
+name: Nifty Algo Trading Bot
+
+on:
+  schedule:
+    # Runs every 5 minutes from Monday to Friday, timed precisely for IST market hours
+    - cron: '*/5 3-10 * * 1-5'
+  workflow_dispatch: # Allows you to run it manually anytime to test
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install pandas numpy requests
+
+      - name: Run Trading Bot
+        env:
+          DHAN_SANDBOX_TOKEN: ${{ secrets.DHAN_SANDBOX_TOKEN }}
+        run: |
+          python bot_runner.py
