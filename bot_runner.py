@@ -9,7 +9,10 @@ import requests
 # CONFIGURATION & SECRETS
 # ==========================================
 API_BASE_URL = "https://sandbox.dhan.co/v2"
-ACCESS_TOKEN = os.getenv("DHAN_SANDBOX_TOKEN")
+
+# If testing locally in VS Code, you can temporarily paste your sandbox token here
+# or ensure your environment variable 'DHAN_SANDBOX_TOKEN' is set.
+ACCESS_TOKEN = os.getenv("DHAN_SANDBOX_TOKEN", "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbkNvbnN1bWVyVHlwZSI6IlNFTEYiLCJwYXJ0bmVySWQiOiIiLCJkaGFuQ2xpZW50SWQiOiIyNjA5MTUxNDA5Iiwid2ViaG9va1VybCI6IiIsImlzcyI6ImRoYW4iLCJleHAiOjE3ODk1NjUyMDV9.6YiFNUeCWydTW1DelSz1lthrrzqJd6dl-gvfLjgl1jLhrpr3N5ptt48mfgpek5wV2qLcvBuJpqJ3jD1aJJYbSA")
 
 headers = {
     "access-token": ACCESS_TOKEN,
@@ -52,14 +55,14 @@ def calculate_time_to_expiry(current_dt):
 
 
 def check_open_position():
-  """Queries Dhan API to ensure we don't open duplicate trades"""
   try:
     res = requests.get(f"{API_BASE_URL}/positions", headers=headers)
     if res.status_code == 200:
       positions = res.json().get("data", [])
-      for p in positions:
-        if p.get("securityId") == "13" and int(p.get("netQty", 0)) != 0:
-          return True
+      if positions:
+        for p in positions:
+          if p.get("securityId") == "13" and int(p.get("netQty", 0)) != 0:
+            return True
   except Exception as e:
     print(f"Error checking positions: {e}")
   return False
@@ -74,20 +77,19 @@ def run_bot():
       " check..."
   )
 
-  # 1. Check if a position is already active
   if check_open_position():
     print("Position already active in portfolio. Holding existing trade.")
     return
 
-  # 2. Fetch today's intraday 5-minute candles from Dhan Sandbox
   url = f"{API_BASE_URL}/charts/intraday"
   today_str = datetime.now().strftime("%Y-%m-%d")
+
+  # Payload corrected: 'oi' removed because Nifty Index spot feed does not use it
   payload = {
       "securityId": "13",
       "exchangeSegment": "IDX_I",
       "instrument": "INDEX",
       "interval": "5",
-      "oi": "false",
       "fromDate": today_str,
       "toDate": today_str,
   }
@@ -98,6 +100,14 @@ def run_bot():
     return
 
   data = response.json()
+
+  if not data or "close" not in data or not data["close"]:
+    print(
+        f"API returned empty data for {today_str}. Response:"
+        f" {response.text[:200]}"
+    )
+    return
+
   df = pd.DataFrame({
       "timestamp": data.get("timestamp", []),
       "open": data.get("open", []),
@@ -109,15 +119,15 @@ def run_bot():
 
   if df.empty or len(df) < 200:
     print(
-        f"Insufficient candles fetched ({len(df)}). Need at least 200 for"
-        " indicators."
+        f"Insufficient candles fetched ({len(df)}). Note: Sandbox may return"
+        " fewer candles outside market hours."
     )
     return
 
   df["datetime"] = pd.to_datetime(df["timestamp"], unit="s")
   df = df.sort_values("datetime").reset_index(drop=True)
 
-  # 3. Exact 7-Year Backtest Indicator Formulas
+  # Exact 7-Year Backtest Indicator Formulas
   df["ema21"] = df["close"].ewm(span=21, adjust=False).mean()
   df["ema50"] = df["close"].ewm(span=50, adjust=False).mean()
   df["ema200"] = df["close"].ewm(span=200, adjust=False).mean()
@@ -142,7 +152,6 @@ def run_bot():
   df["rsi"] = 100 - (100 / (1 + rs))
   df.loc[avg_loss == 0, "rsi"] = 100.0
 
-  # 4. Get Latest Candle Metrics
   i = len(df) - 1
   curr_open = df.loc[i, "open"]
   curr_high = df.loc[i, "high"]
@@ -158,7 +167,6 @@ def run_bot():
   rsi = df.loc[i, "rsi"]
   prev_rsi = df.loc[i - 1, "rsi"]
 
-  # Active Trading Session Window (09:15 to 14:30)
   session_start = dtime(9, 15)
   session_end = dtime(14, 30)
   if not (session_start <= t_time <= session_end):
@@ -167,7 +175,6 @@ def run_bot():
     )
     return
 
-  # 5. Exact Entry Conditions from Backtest
   long_cond = (
       (curr_close > ema21)
       and (ema21 > ema50)
@@ -199,7 +206,7 @@ def run_bot():
         IMPLIED_VOLATILITY,
         "C" if position == 1 else "P",
     )
-    entry_prem *= 1.025  # Slippage adjustment
+    entry_prem *= 1.025
     active_sl = max(0.05, entry_prem - (atr * 0.25))
     active_tp = entry_prem + (atr * 1.2)
 
@@ -209,7 +216,6 @@ def run_bot():
         f" Spot: {curr_open}"
     )
 
-    # Place Mock Order via Sandbox API
     order_url = f"{API_BASE_URL}/orders"
     payload = {
         "securityId": "13",
