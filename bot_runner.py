@@ -10,14 +10,23 @@ import requests
 # ==========================================
 API_BASE_URL = "https://sandbox.dhan.co/v2"
 
-# If testing locally in VS Code, you can temporarily paste your sandbox token here
-# or ensure your environment variable 'DHAN_SANDBOX_TOKEN' is set.
-ACCESS_TOKEN = os.getenv("DHAN_SANDBOX_TOKEN", "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbkNvbnN1bWVyVHlwZSI6IlNFTEYiLCJwYXJ0bmVySWQiOiIiLCJkaGFuQ2xpZW50SWQiOiIyNjA5MTUxNDA5Iiwid2ViaG9va1VybCI6IiIsImlzcyI6ImRoYW4iLCJleHAiOjE3ODk1NjUyMDV9.6YiFNUeCWydTW1DelSz1lthrrzqJd6dl-gvfLjgl1jLhrpr3N5ptt48mfgpek5wV2qLcvBuJpqJ3jD1aJJYbSA")
+ACCESS_TOKEN = os.getenv(
+    "DHAN_SANDBOX_TOKEN",
+    "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbkNvbnN1bWVyVHlwZSI6IlNFTEYiLCJwYXJ0bmVySWQiOiIiLCJkaGFuQ2xpZW50SWQiOiIyNjA5MTUxNDA5Iiwid2ViaG9va1VybCI6IiIsImlzcyI6ImRoYW4iLCJleHAiOjE3ODk1NjUyMDV9.6YiFNUeCWydTW1DelSz1lthrrzqJd6dl-gvfLjgl1jLhrpr3N5ptt48mfgpek5wV2qLcvBuJpqJ3jD1aJJYbSA",
+)
 
+# Added browser User-Agent headers to prevent 403 Forbidden blocks on GitHub Actions
 headers = {
     "access-token": ACCESS_TOKEN,
     "Content-Type": "application/json",
-    "Accept": "application/json",
+    "Accept": (
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
+    ),
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,"
+        " like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    ),
+    "Accept-Language": "en-US,en;q=0.5",
 }
 
 LOT_SIZE = 65
@@ -84,7 +93,6 @@ def run_bot():
   url = f"{API_BASE_URL}/charts/intraday"
   today_str = datetime.now().strftime("%Y-%m-%d")
 
-  # Payload corrected: 'oi' removed because Nifty Index spot feed does not use it
   payload = {
       "securityId": "13",
       "exchangeSegment": "IDX_I",
