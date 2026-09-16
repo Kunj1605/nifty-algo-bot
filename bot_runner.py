@@ -12,7 +12,7 @@ import requests
 SANDBOX_URL = "https://sandbox.dhan.co/v2"
 
 # Pulled securely from GitHub Secrets (or set directly for local test)
-ACCESS_TOKEN = os.getenv("DHAN_ACCESS_TOKEN", "").strip()
+ACCESS_TOKEN = (os.getenv("DHAN_ACCESS_TOKEN") or os.getenv("DHAN_SANDBOX_TOKEN") or "").strip()
 CLIENT_ID = "2609151409"
 
 HEADERS = {
