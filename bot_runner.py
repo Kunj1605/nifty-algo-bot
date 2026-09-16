@@ -11,13 +11,12 @@ import requests
 # =====================================================================
 SANDBOX_URL = "https://sandbox.dhan.co/v2"
 
-# Pulled securely from GitHub Secrets (or set directly for local test)
+# Safely pull whichever token name you saved in GitHub Secrets
 ACCESS_TOKEN = (os.getenv("DHAN_ACCESS_TOKEN") or os.getenv("DHAN_SANDBOX_TOKEN") or "").strip()
-CLIENT_ID = "2609151409"
 
+# Removed the dummy 'client-id' to prevent Dhan 403 mismatch errors
 HEADERS = {
     "access-token": ACCESS_TOKEN,
-    "client-id": CLIENT_ID,
     "Content-Type": "application/json",
     "Accept": "application/json",
 }
@@ -182,7 +181,7 @@ def run_trading_bot():
   print("=" * 65)
 
   if not ACCESS_TOKEN:
-    print("[CRITICAL] DHAN_ACCESS_TOKEN is missing or empty. Exiting.")
+    print("[CRITICAL] Token is missing or empty. Exiting.")
     return
 
   # Step 1: Healthcheck API connectivity
