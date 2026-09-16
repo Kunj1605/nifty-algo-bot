@@ -8,16 +8,12 @@ import requests
 # ==========================================
 # CONFIGURATION & SECRETS
 # ==========================================
-# FIX 1: Switched to Live API URL 
 API_BASE_URL = "https://api.dhan.co/v2"
 
-# FIX 2: Correctly pull the GitHub Secret you set up
 ACCESS_TOKEN = os.getenv("DHAN_ACCESS_TOKEN")
 
-# FIX 3: Extracted your Dhan Client ID from your old token!
 CLIENT_ID = "2609151409"
 
-# Added required 'client-id' header
 headers = {
     "access-token": ACCESS_TOKEN,
     "client-id": CLIENT_ID,  
@@ -36,13 +32,11 @@ LOT_SIZE = 65
 RISK_FREE_RATE = 0.06
 IMPLIED_VOLATILITY = 0.18
 
-
 # ==========================================
 # EXACT BACKTEST MATH & BLACK-SCHOLES
 # ==========================================
 def norm_cdf(x):
   return (1.0 + math.erf(x / math.sqrt(2.0))) / 2.0
-
 
 def black_scholes(S, K, T, r, sigma, option_type="C"):
   if T <= 0 or sigma <= 0 or S <= 0 or K <= 0:
@@ -55,7 +49,6 @@ def black_scholes(S, K, T, r, sigma, option_type="C"):
     price = K * math.exp(-r * T) * norm_cdf(-d2) - S * norm_cdf(-d1)
   return max(1.0, price), 0, 0, 0, 0
 
-
 def calculate_time_to_expiry(current_dt):
   days_to_tue = (1 - current_dt.weekday()) % 7
   expiry_dt = current_dt.normalize() + pd.Timedelta(days=days_to_tue)
@@ -64,7 +57,6 @@ def calculate_time_to_expiry(current_dt):
     expiry_dt += pd.Timedelta(days=7)
   diff_seconds = (expiry_dt - current_dt).total_seconds()
   return max(diff_seconds / (365.25 * 24 * 3600), 1 / (365.25 * 24 * 60))
-
 
 def check_open_position():
   try:
@@ -78,7 +70,6 @@ def check_open_position():
   except Exception as e:
     print(f"Error checking positions: {e}")
   return False
-
 
 # ==========================================
 # MAIN EXECUTION ROUTINE
@@ -110,7 +101,6 @@ def run_bot():
     print(f"API Error: {response.status_code} - {response.text}")
     return
 
-  # FIX 4: Corrected Dhan JSON parsing (Dhan puts data inside a 'data' block and uses 'start_Time')
   response_data = response.json()
   data = response_data.get("data", {})
 
@@ -140,7 +130,6 @@ def run_bot():
   df["datetime"] = pd.to_datetime(df["timestamp"], unit="s")
   df = df.sort_values("datetime").reset_index(drop=True)
 
-  # Exact 7-Year Backtest Indicator Formulas
   df["ema21"] = df["close"].ewm(span=21, adjust=False).mean()
   df["ema50"] = df["close"].ewm(span=50, adjust=False).mean()
   df["ema200"] = df["close"].ewm(span=200, adjust=False).mean()
@@ -246,7 +235,6 @@ def run_bot():
         f"Checked Candle [{t_stamp.strftime('%H:%M')}]: Close={curr_close},"
         f" RSI={rsi:.2f} — No trigger conditions met."
     )
-
 
 if __name__ == "__main__":
   run_bot()
