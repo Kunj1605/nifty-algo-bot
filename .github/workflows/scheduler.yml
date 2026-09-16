@@ -2,9 +2,8 @@ name: Nifty Algo Trading Bot
 
 on:
   schedule:
-    # Runs every 5 minutes from Monday to Friday, timed precisely for IST market hours
     - cron: '*/5 3-10 * * 1-5'
-  workflow_dispatch: # Allows you to run it manually anytime to test
+  workflow_dispatch: 
 
 jobs:
   run-bot:
@@ -25,5 +24,6 @@ jobs:
       - name: Run Trading Bot
         env:
           DHAN_ACCESS_TOKEN: ${{ secrets.DHAN_ACCESS_TOKEN }}
+          DHAN_SANDBOX_TOKEN: ${{ secrets.DHAN_SANDBOX_TOKEN }}
         run: |
           python bot_runner.py
