@@ -14,9 +14,9 @@ SANDBOX_URL = "https://sandbox.dhan.co/v2"
 # Safely pull whichever token name you saved in GitHub Secrets
 ACCESS_TOKEN = (os.getenv("DHAN_ACCESS_TOKEN") or os.getenv("DHAN_SANDBOX_TOKEN") or "").strip()
 
-# Removed the dummy 'client-id' to prevent Dhan 403 mismatch errors
 HEADERS = {
     "access-token": ACCESS_TOKEN,
+    "client-id": "2609151409",  # <-- Added your exact Sandbox Client ID back
     "Content-Type": "application/json",
     "Accept": "application/json",
 }
