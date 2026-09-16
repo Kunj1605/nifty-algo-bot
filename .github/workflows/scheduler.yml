@@ -24,6 +24,6 @@ jobs:
 
       - name: Run Trading Bot
         env:
-          DHAN_SANDBOX_TOKEN: ${{ secrets.DHAN_SANDBOX_TOKEN }}
+          DHAN_ACCESS_TOKEN: ${{ secrets.DHAN_ACCESS_TOKEN }}
         run: |
           python bot_runner.py
