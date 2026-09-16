@@ -8,16 +8,19 @@ import requests
 # ==========================================
 # CONFIGURATION & SECRETS
 # ==========================================
-API_BASE_URL = "https://sandbox.dhan.co/v2"
+# FIX 1: Switched to Live API URL 
+API_BASE_URL = "https://api.dhan.co/v2"
 
-ACCESS_TOKEN = os.getenv(
-    "DHAN_SANDBOX_TOKEN",
-    "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbkNvbnN1bWVyVHlwZSI6IlNFTEYiLCJwYXJ0bmVySWQiOiIiLCJkaGFuQ2xpZW50SWQiOiIyNjA5MTUxNDA5Iiwid2ViaG9va1VybCI6IiIsImlzcyI6ImRoYW4iLCJleHAiOjE3ODk1NjUyMDV9.6YiFNUeCWydTW1DelSz1lthrrzqJd6dl-gvfLjgl1jLhrpr3N5ptt48mfgpek5wV2qLcvBuJpqJ3jD1aJJYbSA",
-)
+# FIX 2: Correctly pull the GitHub Secret you set up
+ACCESS_TOKEN = os.getenv("DHAN_ACCESS_TOKEN")
 
-# Added browser User-Agent headers to prevent 403 Forbidden blocks on GitHub Actions
+# FIX 3: Extracted your Dhan Client ID from your old token!
+CLIENT_ID = "2609151409"
+
+# Added required 'client-id' header
 headers = {
     "access-token": ACCESS_TOKEN,
+    "client-id": CLIENT_ID,  
     "Content-Type": "application/json",
     "Accept": (
         "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
@@ -107,7 +110,9 @@ def run_bot():
     print(f"API Error: {response.status_code} - {response.text}")
     return
 
-  data = response.json()
+  # FIX 4: Corrected Dhan JSON parsing (Dhan puts data inside a 'data' block and uses 'start_Time')
+  response_data = response.json()
+  data = response_data.get("data", {})
 
   if not data or "close" not in data or not data["close"]:
     print(
@@ -117,7 +122,7 @@ def run_bot():
     return
 
   df = pd.DataFrame({
-      "timestamp": data.get("timestamp", []),
+      "timestamp": data.get("start_Time", []),
       "open": data.get("open", []),
       "high": data.get("high", []),
       "low": data.get("low", []),
@@ -127,8 +132,8 @@ def run_bot():
 
   if df.empty or len(df) < 200:
     print(
-        f"Insufficient candles fetched ({len(df)}). Note: Sandbox may return"
-        " fewer candles outside market hours."
+        f"Insufficient candles fetched ({len(df)}). Note: Dhan may return"
+        " fewer candles during early market hours."
     )
     return
 
